@@ -1,14 +1,5 @@
-import Link from "next/link";
-import {
-  Package,
-  ShoppingCart,
-  Users,
-  TrendingUp,
-  ArrowRight,
-} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPrice, formatDate } from "@/lib/utils";
+import { DashboardView } from "@/components/admin/dashboard-view";
 import type { Preorder, Product, Profile } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -58,112 +49,23 @@ export default async function AdminDashboard() {
     }
   >;
 
-  const stats = [
-    {
-      label: "Produits",
-      value: products.count ?? 0,
-      icon: Package,
-      href: "/admin/products",
-    },
-    {
-      label: "Pré-commandes en attente",
-      value: pendingCount,
-      icon: ShoppingCart,
-      href: "/admin/orders",
-    },
-    {
-      label: "Unités à commander",
-      value: totalUnits,
-      icon: TrendingUp,
-      href: "/admin/orders",
-    },
-    {
-      label: "Clients à valider",
-      value: pendingClients.count ?? 0,
-      icon: Users,
-      href: "/admin/clients",
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <Link key={s.label} href={s.href}>
-              <Card className="transition-shadow hover:shadow-md">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{s.value}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {s.label}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Chiffre d&apos;affaires potentiel (commandes actives)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-primary">
-            {formatPrice(revenue)}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Basé sur {totalUnits} unités pré-commandées.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Activité récente</CardTitle>
-          <Link
-            href="/admin/orders"
-            className="flex items-center gap-1 text-sm text-primary hover:underline"
-          >
-            Voir tout <ArrowRight className="h-3 w-3" />
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {recentRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Aucune pré-commande pour le moment.
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {recentRows.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between py-3 text-sm"
-                >
-                  <div>
-                    <span className="font-medium">
-                      {r.client?.shop_name ?? "Boutique"}
-                    </span>{" "}
-                    <span className="text-muted-foreground">
-                      a commandé {r.quantity} ×{" "}
-                      {r.product?.name_fr ?? r.product?.name_en ?? "produit"}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(r.created_at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <DashboardView
+      stats={{
+        productsCount: products.count ?? 0,
+        pendingCount,
+        totalUnits,
+        pendingClientsCount: pendingClients.count ?? 0,
+        revenue,
+      }}
+      recent={recentRows.map((r) => ({
+        id: r.id,
+        quantity: r.quantity,
+        status: r.status,
+        created_at: r.created_at,
+        productName: r.product?.name_fr ?? r.product?.name_en ?? "produit",
+        shopName: r.client?.shop_name ?? "Boutique",
+      }))}
+    />
   );
 }

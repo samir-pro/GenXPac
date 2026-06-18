@@ -57,7 +57,7 @@ export function OrdersView({
     return (
       <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
-          Aucune pré-commande pour le moment.
+          {t("noPreorders")}
         </CardContent>
       </Card>
     );
@@ -66,41 +66,41 @@ export function OrdersView({
   async function bulkStatus(productId: string, status: PreorderStatus) {
     try {
       await updateProductPreordersStatus(productId, status);
-      toast("Statut mis à jour pour toutes les boutiques", "success");
+      toast(t("updated"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
   async function rowStatus(id: string, status: PreorderStatus) {
     try {
       await updatePreorderStatus(id, status);
-      toast("Statut mis à jour", "success");
+      toast(t("updated"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
   async function onAssignBatch(productId: string, batchId: string) {
     try {
       await assignToBatch(productId, batchId || null);
-      toast("Affecté au lot", "success");
+      toast(t("updated"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
   return (
-    <div className="rounded-md border bg-background">
-      <Table>
+    <div className="overflow-x-auto rounded-md border bg-background">
+      <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow>
             <TableHead></TableHead>
-            <TableHead>Produit</TableHead>
+            <TableHead>{t("product")}</TableHead>
             <TableHead>{t("totalUnits")}</TableHead>
             <TableHead>{t("shopsCount")}</TableHead>
-            <TableHead>Lot Chine</TableHead>
-            <TableHead>Statut global</TableHead>
+            <TableHead>{t("batchChina")}</TableHead>
+            <TableHead>{t("globalStatus")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -160,7 +160,7 @@ export function OrdersView({
                           );
                       }}
                     >
-                      <option value="">Changer pour tous…</option>
+                      <option value="">{t("changeForAll")}</option>
                       {PREORDER_STATUS_FLOW.map((s) => (
                         <option key={s} value={s}>
                           {PREORDER_STATUS[s][lang]}
@@ -173,16 +173,16 @@ export function OrdersView({
                 {isOpen && (
                   <TableRow key={`${g.product.id}-detail`}>
                     <TableCell colSpan={6} className="bg-muted/30 p-0">
-                      <div className="p-4">
-                        <Table>
+                      <div className="p-4 overflow-x-auto">
+                        <Table className="min-w-[500px]">
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Boutique</TableHead>
+                              <TableHead>{t("shop")}</TableHead>
                               <TableHead>{t("quantity")}</TableHead>
                               <TableHead>{t("agreedPrice")}</TableHead>
                               <TableHead>{t("notes")}</TableHead>
                               <TableHead>{t("status")}</TableHead>
-                              <TableHead>Changer</TableHead>
+                              <TableHead>{t("change")}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>

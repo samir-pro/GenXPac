@@ -32,17 +32,17 @@ export function PreorderForm({ product }: { product: Product }) {
 
   async function submit() {
     if (quantity < product.min_order_qty) {
-      toast(`Quantité minimum : ${product.min_order_qty}`, "error");
+      toast(`${t("quantity")} min. : ${product.min_order_qty}`, "error");
       return;
     }
     setBusy(true);
     try {
       await createPreorder(product.id, quantity, notes);
-      toast("Pré-commande enregistrée", "success");
+      toast(t("preorderSaved"), "success");
       setOpen(false);
       router.push("/preorders");
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Erreur", "error");
+      toast(e instanceof Error ? e.message : t("error"), "error");
     } finally {
       setBusy(false);
     }
@@ -57,7 +57,7 @@ export function PreorderForm({ product }: { product: Product }) {
         onClick={() => setOpen(true)}
       >
         <ShoppingBag className="h-4 w-4" />
-        {disabled ? "Indisponible" : t("preorder")}
+        {disabled ? t("unavailable") : t("preorder")}
       </Button>
 
       <Dialog open={open} onClose={() => setOpen(false)}>
@@ -81,7 +81,7 @@ export function PreorderForm({ product }: { product: Product }) {
             />
           </div>
           <div className="rounded-md bg-muted p-3 text-sm">
-            Total estimé :{" "}
+            {t("estimatedTotal")} :{" "}
             <span className="font-bold">
               {formatPrice(quantity * product.selling_price, product.currency)}
             </span>

@@ -22,9 +22,9 @@ export function PreordersList({ preorders }: { preorders: ClientPreorder[] }) {
   async function onCancel(id: string) {
     try {
       await cancelPreorder(id);
-      toast("Pré-commande annulée", "success");
+      toast(t("preorderCancelled"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
@@ -32,9 +32,9 @@ export function PreordersList({ preorders }: { preorders: ClientPreorder[] }) {
     return (
       <Card>
         <CardContent className="p-12 text-center text-muted-foreground">
-          Vous n&apos;avez pas encore de pré-commande.{" "}
+          {t("noPreordersClient")}{" "}
           <Link href="/catalog" className="text-primary hover:underline">
-            Parcourir le catalogue
+            {t("browseCatalog")}
           </Link>
         </CardContent>
       </Card>
@@ -67,7 +67,7 @@ export function PreordersList({ preorders }: { preorders: ClientPreorder[] }) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-medium">
-                    {p ? localized(p, "name", lang) : "Produit supprimé"}
+                    {p ? localized(p, "name", lang) : t("deletedProduct")}
                   </h3>
                   <PreorderStatusBadge status={po.status} />
                 </div>
@@ -89,7 +89,7 @@ export function PreordersList({ preorders }: { preorders: ClientPreorder[] }) {
 
               <div className="flex items-center gap-2">
                 <Link href="/messages">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="py-2">
                     {t("messages")}
                   </Button>
                 </Link>
@@ -97,6 +97,7 @@ export function PreordersList({ preorders }: { preorders: ClientPreorder[] }) {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="py-2"
                     onClick={() => onCancel(po.id)}
                   >
                     <X className="h-4 w-4" /> {t("cancel")}

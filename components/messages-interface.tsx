@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Send, MessageSquare } from "lucide-react";
+import { ArrowLeft, Send, MessageSquare } from "lucide-react";
 import { useI18n, localized } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
 import { cn, formatDate } from "@/lib/utils";
@@ -29,7 +29,7 @@ export function MessagesInterface({
   currentUserId: string;
   showClient?: boolean;
 }) {
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const { toast } = useToast();
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -48,7 +48,7 @@ export function MessagesInterface({
       setDraft("");
       router.refresh();
     } catch {
-      toast("Erreur lors de l'envoi", "error");
+      toast(t("error"), "error");
     } finally {
       setSending(false);
     }
@@ -58,7 +58,7 @@ export function MessagesInterface({
     return (
       <Card>
         <CardContent className="p-12 text-center text-muted-foreground">
-          Aucune conversation. Les discussions sont liées à vos pré-commandes.
+          {t("noConversations")}
         </CardContent>
       </Card>
     );
@@ -73,7 +73,13 @@ export function MessagesInterface({
 
   return (
     <div className="grid h-[70vh] gap-4 md:grid-cols-[280px_1fr]">
-      <Card className="overflow-y-auto">
+      {/* Thread list — hidden on mobile when a conversation is selected */}
+      <Card
+        className={cn(
+          "overflow-y-auto",
+          selectedId ? "hidden md:block" : "block"
+        )}
+      >
         <CardContent className="p-2">
           {threads.map((th) => (
             <button
@@ -92,26 +98,44 @@ export function MessagesInterface({
               <span className="text-xs text-muted-foreground">
                 {showClient && th.product
                   ? localized(th.product, "name", lang)
-                  : `${th.preorder.quantity} unités`}
+                  : `${th.preorder.quantity} ${t("unit")}s`}
               </span>
             </button>
           ))}
         </CardContent>
       </Card>
 
-      <Card className="flex flex-col">
+      {/* Chat panel — hidden on mobile when no conversation is selected */}
+      <Card
+        className={cn(
+          "flex flex-col",
+          selectedId ? "flex" : "hidden md:flex"
+        )}
+      >
         {selected ? (
           <>
             <div className="flex items-center justify-between border-b p-4">
-              <div>
-                <p className="font-medium">{threadLabel(selected)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {selected.product
-                    ? showClient
-                      ? localized(selected.product, "name", lang)
-                      : `${selected.preorder.quantity} × unités`
-                    : ""}
-                </p>
+              <div className="flex items-center gap-2">
+                {/* Back button — visible only on mobile */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="md:hidden"
+                  onClick={() => setSelectedId(null)}
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <p className="font-medium">{threadLabel(selected)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selected.product
+                      ? showClient
+                        ? localized(selected.product, "name", lang)
+                        : `${selected.preorder.quantity} × ${t("unit")}s`
+                      : ""}
+                  </p>
+                </div>
               </div>
               <PreorderStatusBadge status={selected.preorder.status} />
             </div>
@@ -119,7 +143,7 @@ export function MessagesInterface({
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
               {selected.messages.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground">
-                  Aucun message. Démarrez la discussion.
+                  {t("noMessages")}
                 </p>
               ) : (
                 selected.messages.map((m) => {
@@ -159,7 +183,7 @@ export function MessagesInterface({
               <Input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="Votre message…"
+                placeholder={t("yourMessage")}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -174,8 +198,7 @@ export function MessagesInterface({
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center text-muted-foreground">
-            <MessageSquare className="mr-2 h-5 w-5" /> Sélectionnez une
-            conversation
+            <MessageSquare className="mr-2 h-5 w-5" /> {t("selectConversation")}
           </div>
         )}
       </Card>
