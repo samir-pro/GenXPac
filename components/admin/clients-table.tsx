@@ -24,14 +24,60 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
   async function approve(id: string, approved: boolean) {
     try {
       await setClientApproval(id, approved);
-      toast(approved ? "Client validé" : "Accès suspendu", "success");
+      toast(approved ? t("approved") : t("suspend"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
   const pending = clients.filter((c) => !c.approved);
   const approved = clients.filter((c) => c.approved);
+
+  const renderCards = (list: Profile[]) =>
+    list.map((c) => (
+      <div key={c.id} className="rounded-lg border bg-background p-4 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold truncate">{c.shop_name ?? "—"}</p>
+            <p className="text-sm text-muted-foreground truncate">{c.full_name ?? "—"}</p>
+          </div>
+          {c.approved ? (
+            <Badge className="shrink-0 border-green-200 bg-green-100 text-green-800">
+              {t("approved")}
+            </Badge>
+          ) : (
+            <Badge className="shrink-0 border-yellow-200 bg-yellow-100 text-yellow-800">
+              {t("pendingApproval")}
+            </Badge>
+          )}
+        </div>
+        <p className="text-sm truncate text-muted-foreground">{c.email}</p>
+        {c.phone && <p className="text-sm text-muted-foreground">{c.phone}</p>}
+        <p className="text-xs text-muted-foreground">
+          {t("registeredOn")} {formatDate(c.created_at)}
+        </p>
+        <div className="pt-1">
+          {c.approved ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => approve(c.id, false)}
+            >
+              <X className="h-4 w-4" /> {t("suspend")}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => approve(c.id, true)}
+            >
+              <Check className="h-4 w-4" /> {t("validate")}
+            </Button>
+          )}
+        </div>
+      </div>
+    ));
 
   const renderRows = (list: Profile[]) =>
     list.map((c) => (
@@ -44,11 +90,11 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
         <TableCell>
           {c.approved ? (
             <Badge className="border-green-200 bg-green-100 text-green-800">
-              Validé
+              {t("approved")}
             </Badge>
           ) : (
             <Badge className="border-yellow-200 bg-yellow-100 text-yellow-800">
-              En attente
+              {t("pendingApproval")}
             </Badge>
           )}
         </TableCell>
@@ -59,11 +105,11 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
               size="sm"
               onClick={() => approve(c.id, false)}
             >
-              <X className="h-4 w-4" /> Suspendre
+              <X className="h-4 w-4" /> {t("suspend")}
             </Button>
           ) : (
             <Button size="sm" onClick={() => approve(c.id, true)}>
-              <Check className="h-4 w-4" /> Valider
+              <Check className="h-4 w-4" /> {t("validate")}
             </Button>
           )}
         </TableCell>
@@ -72,11 +118,23 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
 
   return (
     <div className="space-y-8">
+      {/* Pending section */}
       <section className="space-y-3">
         <h3 className="font-semibold">
-          En attente de validation ({pending.length})
+          {t("pendingRequests")} ({pending.length})
         </h3>
-        <div className="rounded-md border bg-background">
+
+        {/* Mobile card view */}
+        <div className="block sm:hidden space-y-3">
+          {pending.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">{t("noPending")}</p>
+          ) : (
+            renderCards(pending)
+          )}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden sm:block rounded-md border bg-background">
           <Table>
             <TableHeader>
               <TableRow>
@@ -84,7 +142,7 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
                 <TableHead>{t("fullName")}</TableHead>
                 <TableHead>{t("email")}</TableHead>
                 <TableHead>{t("phone")}</TableHead>
-                <TableHead>Inscrit le</TableHead>
+                <TableHead>{t("registeredOn")}</TableHead>
                 <TableHead>{t("status")}</TableHead>
                 <TableHead className="text-end">{t("actions")}</TableHead>
               </TableRow>
@@ -93,7 +151,7 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
               {pending.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Aucune demande en attente.
+                    {t("noPending")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -104,9 +162,23 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
         </div>
       </section>
 
+      {/* Approved section */}
       <section className="space-y-3">
-        <h3 className="font-semibold">Clients validés ({approved.length})</h3>
-        <div className="rounded-md border bg-background">
+        <h3 className="font-semibold">
+          {t("validatedClients")} ({approved.length})
+        </h3>
+
+        {/* Mobile card view */}
+        <div className="block sm:hidden space-y-3">
+          {approved.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">{t("noApproved")}</p>
+          ) : (
+            renderCards(approved)
+          )}
+        </div>
+
+        {/* Desktop table view */}
+        <div className="hidden sm:block rounded-md border bg-background">
           <Table>
             <TableHeader>
               <TableRow>
@@ -114,7 +186,7 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
                 <TableHead>{t("fullName")}</TableHead>
                 <TableHead>{t("email")}</TableHead>
                 <TableHead>{t("phone")}</TableHead>
-                <TableHead>Inscrit le</TableHead>
+                <TableHead>{t("registeredOn")}</TableHead>
                 <TableHead>{t("status")}</TableHead>
                 <TableHead className="text-end">{t("actions")}</TableHead>
               </TableRow>
@@ -123,7 +195,7 @@ export function ClientsTable({ clients }: { clients: Profile[] }) {
               {approved.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Aucun client validé.
+                    {t("noApproved")}
                   </TableCell>
                 </TableRow>
               ) : (

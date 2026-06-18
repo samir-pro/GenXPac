@@ -28,7 +28,7 @@ export function BatchesManager({
   batches: Batch[];
   counts: Record<string, { units: number; products: number }>;
 }) {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -36,18 +36,18 @@ export function BatchesManager({
   async function onStatus(id: string, status: BatchStatus) {
     try {
       await updateBatchStatus(id, status);
-      toast("Statut du lot mis à jour", "success");
+      toast(t("updated"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
   async function onDelete(id: string) {
     try {
       await deleteBatch(id);
-      toast("Lot supprimé", "success");
+      toast(t("deleted"), "success");
     } catch {
-      toast("Erreur", "error");
+      toast(t("error"), "error");
     }
   }
 
@@ -55,19 +55,18 @@ export function BatchesManager({
     <div className="space-y-6">
       <div className="flex justify-end">
         <Button onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" /> Nouveau lot
+          <Plus className="h-4 w-4" /> {t("newBatch")}
         </Button>
       </div>
 
       {batches.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
-            Aucun lot. Créez un lot pour regrouper des produits à commander en
-            Chine.
+            {t("noBatches")}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
           {batches.map((b) => {
             const c = counts[b.id] ?? { units: 0, products: 0 };
             return (
@@ -76,7 +75,7 @@ export function BatchesManager({
                   <div>
                     <CardTitle>{b.name}</CardTitle>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Créé le {formatDate(b.created_at)}
+                      {t("createdOn")} {formatDate(b.created_at)}
                     </p>
                   </div>
                   <BatchStatusBadge status={b.status} />
@@ -85,18 +84,18 @@ export function BatchesManager({
                   <div className="flex items-center gap-4 text-sm">
                     <span className="flex items-center gap-1">
                       <Package className="h-4 w-4 text-muted-foreground" />
-                      {c.products} produits
+                      {c.products} {t("products")}
                     </span>
-                    <span className="font-medium">{c.units} unités</span>
+                    <span className="font-medium">{c.units} {t("totalUnits")}</span>
                   </div>
                   {b.estimated_arrival && (
                     <p className="text-sm text-muted-foreground">
-                      Arrivée estimée : {formatDate(b.estimated_arrival)}
+                      {t("estimatedArrival")} : {formatDate(b.estimated_arrival)}
                     </p>
                   )}
                   {b.actual_arrival && (
                     <p className="text-sm text-green-700">
-                      Arrivé le {formatDate(b.actual_arrival)}
+                      {t("arrivedOn")} {formatDate(b.actual_arrival)}
                     </p>
                   )}
                   {b.notes && <p className="text-sm">{b.notes}</p>}
@@ -131,17 +130,17 @@ export function BatchesManager({
 
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogHeader>
-          <DialogTitle>Nouveau lot Chine</DialogTitle>
+          <DialogTitle>{t("newBatch")}</DialogTitle>
         </DialogHeader>
         <form
           action={async (fd) => {
             setCreating(true);
             try {
               await createBatch(fd);
-              toast("Lot créé", "success");
+              toast(t("created"), "success");
               setOpen(false);
             } catch (e) {
-              toast(e instanceof Error ? e.message : "Erreur", "error");
+              toast(e instanceof Error ? e.message : t("error"), "error");
             } finally {
               setCreating(false);
             }
@@ -149,15 +148,15 @@ export function BatchesManager({
           className="space-y-4"
         >
           <div className="space-y-2">
-            <Label>Nom du lot</Label>
-            <Input name="name" placeholder="Commande Juin 2026" required />
+            <Label>{t("batchName")}</Label>
+            <Input name="name" required />
           </div>
           <div className="space-y-2">
-            <Label>Arrivée estimée</Label>
+            <Label>{t("estimatedArrival")}</Label>
             <Input name="estimated_arrival" type="date" />
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{t("notes")}</Label>
             <Textarea name="notes" />
           </div>
           <div className="flex justify-end gap-2">
@@ -166,10 +165,10 @@ export function BatchesManager({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Annuler
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={creating}>
-              Créer
+              {t("create")}
             </Button>
           </div>
         </form>
