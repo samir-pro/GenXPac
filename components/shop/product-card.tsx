@@ -62,16 +62,18 @@ export function ProductCard({
   return (
     <Link href={`/catalog/${product.id}`}>
       <Card className="h-full flex flex-col overflow-hidden transition-shadow hover:shadow-md">
-        {/* Image — fixed square, never shrinks */}
-        <div className="relative aspect-square shrink-0 bg-muted">
-          {product.images?.[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.images[0]} alt={name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <ImageIcon className="h-10 w-10 text-muted-foreground" />
-            </div>
-          )}
+        {/* Image — pb-[100%] forces perfect square from container width; img fills via absolute inset */}
+        <div className="relative w-full overflow-hidden bg-muted pb-[100%]">
+          <div className="absolute inset-0">
+            {product.images?.[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={product.images[0]} alt={name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <ImageIcon className="h-10 w-10 text-muted-foreground" />
+              </div>
+            )}
+          </div>
           <div className="absolute end-2 top-2">
             <StockStatusBadge status={product.stock_status} />
           </div>
