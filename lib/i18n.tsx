@@ -41,6 +41,10 @@ export const translations: Dict = {
   shop: { fr: "Boutique", ar: "المتجر", en: "Shop" },
   product: { fr: "Produit", ar: "المنتج", en: "Product" },
   unavailable: { fr: "Indisponible", ar: "غير متوفر", en: "Unavailable" },
+  error: { fr: "Erreur", ar: "خطأ", en: "Error" },
+  updated: { fr: "Mis à jour", ar: "تم التحديث", en: "Updated" },
+  deleted: { fr: "Supprimé", ar: "تم الحذف", en: "Deleted" },
+  created: { fr: "Créé", ar: "تم الإنشاء", en: "Created" },
   estimatedTotal: { fr: "Total estimé", ar: "المجموع المقدر", en: "Estimated total" },
 
   // Auth
