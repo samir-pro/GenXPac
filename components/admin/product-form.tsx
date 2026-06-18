@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Loader2 } from "lucide-react";
+import { UploadCloud, X, Loader2, Languages } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
@@ -13,7 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { autoTranslate } from "@/app/(admin)/admin/products/translate";
 import type { Category, Product } from "@/types/database";
+
+type Lang = "fr" | "ar" | "en";
 
 export function ProductForm({
   categories,
@@ -26,10 +29,26 @@ export function ProductForm({
 }) {
   const { t } = useI18n();
   const { toast } = useToast();
+
+  // Controlled state for translatable fields
+  const [fields, setFields] = useState({
+    name_fr: product?.name_fr ?? "",
+    name_ar: product?.name_ar ?? "",
+    name_en: product?.name_en ?? "",
+    description_fr: product?.description_fr ?? "",
+    description_ar: product?.description_ar ?? "",
+    description_en: product?.description_en ?? "",
+  });
+
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [urlInput, setUrlInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [sourceLang, setSourceLang] = useState<Lang>("fr");
+
+  const setField = (key: keyof typeof fields, value: string) =>
+    setFields((prev) => ({ ...prev, [key]: value }));
 
   const addUrl = () => {
     const url = urlInput.trim();
@@ -72,10 +91,34 @@ export function ProductForm({
     accept: { "image/*": [] },
   });
 
+  async function handleTranslate() {
+    const name = fields[`name_${sourceLang}` as keyof typeof fields];
+    if (!name.trim()) {
+      toast(`Remplissez d'abord le nom en ${sourceLang.toUpperCase()}`, "error");
+      return;
+    }
+    setTranslating(true);
+    try {
+      const result = await autoTranslate(
+        sourceLang,
+        name,
+        fields[`description_${sourceLang}` as keyof typeof fields]
+      );
+      setFields(result);
+      toast("Traduction effectuée ✓", "success");
+    } catch {
+      toast("Erreur de traduction — vérifiez votre connexion", "error");
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   return (
     <form
       action={async (fd) => {
         setSubmitting(true);
+        // Inject controlled fields into FormData
+        Object.entries(fields).forEach(([k, v]) => fd.set(k, v));
         fd.set("images", images.join("\n"));
         try {
           await action(fd);
@@ -86,54 +129,93 @@ export function ProductForm({
       }}
       className="space-y-6"
     >
+      {/* ── Multilingual names & descriptions ── */}
       <Card>
         <CardContent className="space-y-4 pt-6">
+          {/* Auto-translate toolbar */}
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-4 py-3">
+            <Languages className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Traduire depuis :</span>
+            <Select
+              value={sourceLang}
+              onChange={(e) => setSourceLang(e.target.value as Lang)}
+              className="w-32"
+            >
+              <option value="fr">Français</option>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleTranslate}
+              disabled={translating}
+              className="ms-auto"
+            >
+              {translating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Traduire automatiquement"
+              )}
+            </Button>
+          </div>
+
           <Tabs defaultValue="fr">
             <TabsList>
               <TabsTrigger value="fr">Français</TabsTrigger>
               <TabsTrigger value="ar">العربية</TabsTrigger>
               <TabsTrigger value="en">English</TabsTrigger>
             </TabsList>
+
             <TabsContent value="fr" className="space-y-3">
               <div className="space-y-2">
                 <Label>Nom (FR)</Label>
-                <Input name="name_fr" defaultValue={product?.name_fr ?? ""} />
+                <Input
+                  value={fields.name_fr}
+                  onChange={(e) => setField("name_fr", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Description (FR)</Label>
                 <Textarea
-                  name="description_fr"
-                  defaultValue={product?.description_fr ?? ""}
+                  value={fields.description_fr}
+                  onChange={(e) => setField("description_fr", e.target.value)}
                 />
               </div>
             </TabsContent>
+
             <TabsContent value="ar" className="space-y-3" dir="rtl">
               <div className="space-y-2">
                 <Label>الاسم (AR)</Label>
-                <Input name="name_ar" defaultValue={product?.name_ar ?? ""} />
+                <Input
+                  value={fields.name_ar}
+                  onChange={(e) => setField("name_ar", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>الوصف (AR)</Label>
                 <Textarea
-                  name="description_ar"
-                  defaultValue={product?.description_ar ?? ""}
+                  value={fields.description_ar}
+                  onChange={(e) => setField("description_ar", e.target.value)}
                 />
               </div>
             </TabsContent>
+
             <TabsContent value="en" className="space-y-3">
               <div className="space-y-2">
                 <Label>Name (EN) *</Label>
                 <Input
-                  name="name_en"
+                  value={fields.name_en}
+                  onChange={(e) => setField("name_en", e.target.value)}
                   required
-                  defaultValue={product?.name_en ?? ""}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Description (EN)</Label>
                 <Textarea
-                  name="description_en"
-                  defaultValue={product?.description_en ?? ""}
+                  value={fields.description_en}
+                  onChange={(e) => setField("description_en", e.target.value)}
                 />
               </div>
             </TabsContent>
@@ -141,6 +223,7 @@ export function ProductForm({
         </CardContent>
       </Card>
 
+      {/* ── Brand, SKU, category, tags ── */}
       <Card>
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
           <div className="space-y-2">
@@ -173,6 +256,7 @@ export function ProductForm({
         </CardContent>
       </Card>
 
+      {/* ── Supplier info ── */}
       <Card>
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
           <div className="space-y-2">
@@ -194,6 +278,7 @@ export function ProductForm({
         </CardContent>
       </Card>
 
+      {/* ── Images ── */}
       <Card>
         <CardContent className="space-y-4 pt-6">
           <Label>{t("images")}</Label>
@@ -239,11 +324,7 @@ export function ProductForm({
                   className="group relative aspect-square overflow-hidden rounded-md border"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={src} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
@@ -258,26 +339,16 @@ export function ProductForm({
         </CardContent>
       </Card>
 
+      {/* ── Pricing & stock ── */}
       <Card>
         <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>{t("costPrice")}</Label>
-            <Input
-              name="cost_price"
-              type="number"
-              step="0.001"
-              defaultValue={product?.cost_price ?? ""}
-            />
+            <Input name="cost_price" type="number" step="0.001" defaultValue={product?.cost_price ?? ""} />
           </div>
           <div className="space-y-2">
             <Label>{t("sellingPrice")} *</Label>
-            <Input
-              name="selling_price"
-              type="number"
-              step="0.001"
-              required
-              defaultValue={product?.selling_price ?? ""}
-            />
+            <Input name="selling_price" type="number" step="0.001" required defaultValue={product?.selling_price ?? ""} />
           </div>
           <div className="space-y-2">
             <Label>{t("unit")}</Label>
@@ -285,19 +356,11 @@ export function ProductForm({
           </div>
           <div className="space-y-2">
             <Label>{t("minOrderQty")}</Label>
-            <Input
-              name="min_order_qty"
-              type="number"
-              min="1"
-              defaultValue={product?.min_order_qty ?? 1}
-            />
+            <Input name="min_order_qty" type="number" min="1" defaultValue={product?.min_order_qty ?? 1} />
           </div>
           <div className="space-y-2">
             <Label>{t("stockStatus")}</Label>
-            <Select
-              name="stock_status"
-              defaultValue={product?.stock_status ?? "available"}
-            >
+            <Select name="stock_status" defaultValue={product?.stock_status ?? "available"}>
               <option value="available">Disponible</option>
               <option value="limited">Stock limité</option>
               <option value="unavailable">Indisponible</option>
@@ -317,7 +380,7 @@ export function ProductForm({
       </Card>
 
       <div className="flex justify-end gap-2">
-        <Button type="submit" disabled={submitting || uploading}>
+        <Button type="submit" disabled={submitting || uploading || translating}>
           {submitting ? "…" : t("save")}
         </Button>
       </div>
