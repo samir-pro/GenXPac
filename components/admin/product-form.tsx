@@ -148,6 +148,10 @@ export function ProductForm({
             <Input name="brand" defaultValue={product?.brand ?? ""} />
           </div>
           <div className="space-y-2">
+            <Label>SKU / Référence</Label>
+            <Input name="sku" defaultValue={product?.sku ?? ""} placeholder="EX-001" />
+          </div>
+          <div className="space-y-2">
             <Label>{t("category")}</Label>
             <Select name="category_id" defaultValue={product?.category_id ?? ""}>
               <option value="">—</option>
@@ -165,6 +169,27 @@ export function ProductForm({
               defaultValue={product?.tags?.join(", ") ?? ""}
               placeholder="électronique, gadget, usb"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Fournisseur Chine</Label>
+            <Input name="supplier_name" defaultValue={product?.supplier_name ?? ""} placeholder="Shenzhen Electronics Co." />
+          </div>
+          <div className="space-y-2">
+            <Label>Lien fournisseur (Alibaba / 1688)</Label>
+            <Input name="supplier_url" type="url" defaultValue={product?.supplier_url ?? ""} placeholder="https://..." />
+          </div>
+          <div className="space-y-2">
+            <Label>Poids (kg)</Label>
+            <Input name="weight_kg" type="number" step="0.001" defaultValue={product?.weight_kg ?? ""} placeholder="0.250" />
+          </div>
+          <div className="space-y-2">
+            <Label>Délai livraison Chine (jours)</Label>
+            <Input name="lead_time_days" type="number" min="1" defaultValue={product?.lead_time_days ?? ""} placeholder="30" />
           </div>
         </CardContent>
       </Card>

@@ -40,6 +40,7 @@ create table if not exists products (
   description_ar text,
   category_id uuid references categories(id),
   brand text,
+  sku text,
   tags text[],
   images text[],
   cost_price decimal(10,3),
@@ -47,8 +48,14 @@ create table if not exists products (
   currency text default 'TND',
   unit text default 'pièce',
   min_order_qty integer default 1,
+  weight_kg decimal(8,3),
+  lead_time_days integer,
+  supplier_name text,
+  supplier_url text,
   stock_status text default 'available' check (stock_status in ('available', 'limited', 'unavailable')),
   is_published boolean default false,
+  created_by uuid references profiles(id) on delete set null,
+  updated_by uuid references profiles(id) on delete set null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
