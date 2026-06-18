@@ -214,13 +214,106 @@ create policy "admin upload product images" on storage.objects
   for insert with check (bucket_id = 'product-images' and public.is_admin());
 
 -- ----------------------------------------------------------------
--- Seed categories
+-- Seed categories (hierarchical — Electronics + Fashion + Home)
 -- ----------------------------------------------------------------
-insert into categories (name_en, name_fr, name_ar, slug) values
-  ('Electronics', 'Électronique', 'إلكترونيات', 'electronics'),
-  ('Clothing',    'Vêtements',    'ملابس',      'clothing'),
-  ('Accessories', 'Accessoires',  'إكسسوارات',  'accessories'),
-  ('Home & Kitchen', 'Maison & Cuisine', 'المنزل والمطبخ', 'home-kitchen'),
-  ('Beauty',      'Beauté',       'الجمال',     'beauty'),
-  ('Toys',        'Jouets',       'ألعاب',      'toys')
-on conflict (slug) do nothing;
+
+-- Level 1: parent categories
+INSERT INTO categories (name_en, name_fr, name_ar, slug) VALUES
+  ('Electronics & Tech',   'Électronique & Tech',  'إلكترونيات وتقنية', 'electronics'),
+  ('Fashion & Footwear',   'Mode & Chaussures',    'الموضة والأحذية',   'fashion'),
+  ('Home & Living',        'Maison & Vie',         'المنزل والمعيشة',   'home-living')
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar;
+
+-- Level 2: Electronics subcategories
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Phone Accessories',          'Accessoires Téléphone',       'إكسسوارات الهاتف',             'phone-accessories', (SELECT id FROM categories WHERE slug='electronics')),
+  ('Chargers & Cables',          'Chargeurs & Câbles',          'شواحن وكابلات',                 'chargers-cables',   (SELECT id FROM categories WHERE slug='electronics')),
+  ('Audio & Earphones',          'Audio & Écouteurs',           'صوت وسماعات',                   'audio',             (SELECT id FROM categories WHERE slug='electronics')),
+  ('Power Banks',                'Batteries Externes',          'بطاريات خارجية',                'power-banks',       (SELECT id FROM categories WHERE slug='electronics')),
+  ('PC & Office Accessories',    'Accessoires PC & Bureau',     'إكسسوارات الكمبيوتر والمكتب',  'pc-accessories',    (SELECT id FROM categories WHERE slug='electronics')),
+  ('Car Electronics',            'Électronique Auto',           'إلكترونيات السيارة',            'car-electronics',   (SELECT id FROM categories WHERE slug='electronics')),
+  ('Smart Gadgets',              'Gadgets & Maison Connectée',  'أجهزة ذكية ومنزل متصل',        'smart-gadgets',     (SELECT id FROM categories WHERE slug='electronics')),
+  ('Outdoor & Sport Tech',       'Tech Outdoor & Sport',        'تقنية للخارج والرياضة',         'outdoor-tech',      (SELECT id FROM categories WHERE slug='electronics')),
+  ('Cables & Adapters',          'Câbles & Adaptateurs',        'كابلات ومحولات',                'cables-adapters',   (SELECT id FROM categories WHERE slug='electronics'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: Phone accessories sub-subcategories
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Phone Cases & Covers',   'Coques & Housses',              'أغطية وحافظات الهاتف',  'phone-cases',     (SELECT id FROM categories WHERE slug='phone-accessories')),
+  ('Screen Protectors',      'Protections Écran',             'واقيات الشاشة',          'screen-protectors',(SELECT id FROM categories WHERE slug='phone-accessories')),
+  ('Phone Holders & Stands', 'Supports & Fixations Téléphone','حوامل وأحامل الهاتف',   'phone-holders',   (SELECT id FROM categories WHERE slug='phone-accessories')),
+  ('Selfie Sticks & Tripods','Perches Selfie & Trépieds',     'عصي السيلفي وحوامل',     'selfie-sticks',   (SELECT id FROM categories WHERE slug='phone-accessories'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: PC accessories sub-subcategories
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Mice',                   'Souris',                        'فأرة الكمبيوتر',         'mice',            (SELECT id FROM categories WHERE slug='pc-accessories')),
+  ('Keyboards',              'Claviers',                      'لوحات المفاتيح',          'keyboards',       (SELECT id FROM categories WHERE slug='pc-accessories')),
+  ('Mouse Pads & Desk Mats', 'Tapis de Souris & Bureaux',     'أحزمة الفأرة والمكتب',   'mouse-pads',      (SELECT id FROM categories WHERE slug='pc-accessories')),
+  ('USB Hubs & Docks',       'Hubs USB & Stations d''accueil','موزعات USB ومحطات',      'usb-hubs',        (SELECT id FROM categories WHERE slug='pc-accessories')),
+  ('Webcams',                'Webcams & Caméras PC',          'كاميرات الويب',           'webcams',         (SELECT id FROM categories WHERE slug='pc-accessories')),
+  ('PC Cooling & Fans',      'Refroidisseurs & Ventilateurs', 'مراوح وتبريد الكمبيوتر', 'pc-cooling',      (SELECT id FROM categories WHERE slug='pc-accessories'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 2: Fashion subcategories
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Men''s Shoes',        'Chaussures Homme',       'أحذية رجالية',                    'mens-shoes',       (SELECT id FROM categories WHERE slug='fashion')),
+  ('Women''s Shoes',      'Chaussures Femme',       'أحذية نسائية',                    'womens-shoes',     (SELECT id FROM categories WHERE slug='fashion')),
+  ('Kids'' Shoes',        'Chaussures Enfant',      'أحذية أطفال',                     'kids-shoes',       (SELECT id FROM categories WHERE slug='fashion')),
+  ('Sports Shoes & Cleats','Chaussures Sport & Crampons','أحذية رياضية وملاعب',        'sports-shoes',     (SELECT id FROM categories WHERE slug='fashion')),
+  ('Boots & Ankle Boots', 'Bottes & Bottines',      'بوط وجلاجل',                      'boots',            (SELECT id FROM categories WHERE slug='fashion')),
+  ('Women''s Fashion',    'Mode Femme',             'أزياء نسائية',                    'womens-fashion',   (SELECT id FROM categories WHERE slug='fashion')),
+  ('Men''s Fashion',      'Mode Homme',             'أزياء رجالية',                    'mens-fashion',     (SELECT id FROM categories WHERE slug='fashion')),
+  ('Bags & Accessories',  'Sacs & Accessoires',     'حقائب وإكسسوارات',                'bags-accessories', (SELECT id FROM categories WHERE slug='fashion')),
+  ('Beauty & Cosmetics',  'Beauté & Cosmétiques',   'الجمال ومستحضرات التجميل',        'beauty-cosmetics', (SELECT id FROM categories WHERE slug='fashion'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: Sports shoes
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Football Cleats',   'Chaussures de Football', 'أحذية كرة القدم',        'football-cleats', (SELECT id FROM categories WHERE slug='sports-shoes')),
+  ('Running Shoes',     'Chaussures de Course',   'أحذية الجري',            'running-shoes',   (SELECT id FROM categories WHERE slug='sports-shoes')),
+  ('Gym & Training',    'Fitness & Salle',        'أحذية الجيم واللياقة',   'training-shoes',  (SELECT id FROM categories WHERE slug='sports-shoes'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: Women's fashion
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Tops & Blouses',      'Tops & Blouses',         'توب وبلوزات',       'womens-tops',     (SELECT id FROM categories WHERE slug='womens-fashion')),
+  ('Dresses & Skirts',    'Robes & Jupes',           'فساتين وتنانير',    'womens-dresses',  (SELECT id FROM categories WHERE slug='womens-fashion')),
+  ('Abayas & Modest Wear','Abayas & Vêtements Couvrants','عباءات وملابس محتشمة','womens-abayas',(SELECT id FROM categories WHERE slug='womens-fashion')),
+  ('Jackets & Coats',     'Vestes & Manteaux',       'جاكيتات ومعاطف',   'womens-jackets',  (SELECT id FROM categories WHERE slug='womens-fashion')),
+  ('Lingerie & Underwear','Lingerie & Sous-vêtements','لانجري وملابس داخلية','womens-lingerie',(SELECT id FROM categories WHERE slug='womens-fashion'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: Men's fashion
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('T-Shirts & Polos',   'T-Shirts & Polos',          'تيشيرتات وبولو',    'mens-tshirts',   (SELECT id FROM categories WHERE slug='mens-fashion')),
+  ('Trousers & Jeans',   'Pantalons & Jeans',          'بنطلونات وجينز',    'mens-trousers',  (SELECT id FROM categories WHERE slug='mens-fashion')),
+  ('Jackets & Hoodies',  'Vestes & Sweats',            'جاكيتات وهوديات',   'mens-jackets',   (SELECT id FROM categories WHERE slug='mens-fashion')),
+  ('Underwear & Socks',  'Sous-vêtements & Chaussettes','ملابس داخلية وجوارب','mens-underwear',(SELECT id FROM categories WHERE slug='mens-fashion')),
+  ('Kids'' Clothing',    'Vêtements Enfant',           'ملابس أطفال',       'kids-clothing',  (SELECT id FROM categories WHERE slug='mens-fashion'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: Bags & accessories
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Handbags & Tote Bags',  'Sacs à Main & Cabas',       'حقائب يد وتوت',    'handbags',      (SELECT id FROM categories WHERE slug='bags-accessories')),
+  ('Backpacks',             'Sacs à Dos',                'حقائب ظهر',        'backpacks',     (SELECT id FROM categories WHERE slug='bags-accessories')),
+  ('Belts & Wallets',       'Ceintures & Portefeuilles', 'أحزمة ومحافظ',     'belts-wallets', (SELECT id FROM categories WHERE slug='bags-accessories')),
+  ('Sunglasses',            'Lunettes de Soleil',        'نظارات شمسية',     'sunglasses',    (SELECT id FROM categories WHERE slug='bags-accessories')),
+  ('Hats, Caps & Scarves',  'Chapeaux, Casquettes & Écharpes','قبعات وأوشحة','hats-caps',    (SELECT id FROM categories WHERE slug='bags-accessories')),
+  ('Jewellery & Hair Accessories','Bijoux & Cheveux',    'مجوهرات وإكسسوارات الشعر','jewellery-hair',(SELECT id FROM categories WHERE slug='bags-accessories'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 2: Home & Living subcategories
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('Kitchen Gadgets & Tools', 'Gadgets & Ustensiles Cuisine','أدوات وأجهزة المطبخ', 'kitchen-gadgets',     (SELECT id FROM categories WHERE slug='home-living')),
+  ('Home Decor',              'Décoration Maison',           'ديكور المنزل',         'home-decor',          (SELECT id FROM categories WHERE slug='home-living')),
+  ('Lighting',                'Éclairage',                   'إضاءة',                'lighting',            (SELECT id FROM categories WHERE slug='home-living')),
+  ('Storage & Organisation',  'Rangement & Organisation',    'تخزين وتنظيم',         'storage-organization',(SELECT id FROM categories WHERE slug='home-living'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
+
+-- Level 3: Lighting
+INSERT INTO categories (name_en, name_fr, name_ar, slug, parent_id) VALUES
+  ('LED Strips & Smart Lights','Rubans LED & Lumières Connectées','شرائط LED وإضاءة ذكية','led-strips',   (SELECT id FROM categories WHERE slug='lighting')),
+  ('Desk Lamps',               'Lampes de Bureau',               'مصابيح مكتبية',        'desk-lamps',   (SELECT id FROM categories WHERE slug='lighting')),
+  ('Night Lights',             'Veilleuses & Ambiance',          'إضاءة ليلية',          'night-lights', (SELECT id FROM categories WHERE slug='lighting'))
+ON CONFLICT (slug) DO UPDATE SET name_en=EXCLUDED.name_en, name_fr=EXCLUDED.name_fr, name_ar=EXCLUDED.name_ar, parent_id=EXCLUDED.parent_id;
