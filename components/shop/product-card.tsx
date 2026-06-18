@@ -61,8 +61,9 @@ export function ProductCard({
 
   return (
     <Link href={`/catalog/${product.id}`}>
-      <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
-        <div className="relative aspect-square bg-muted">
+      <Card className="h-full flex flex-col overflow-hidden transition-shadow hover:shadow-md">
+        {/* Image — fixed square, never shrinks */}
+        <div className="relative aspect-square shrink-0 bg-muted">
           {product.images?.[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={product.images[0]} alt={name} className="h-full w-full object-cover" />
@@ -75,22 +76,37 @@ export function ProductCard({
             <StockStatusBadge status={product.stock_status} />
           </div>
         </div>
-        <CardContent className="space-y-2 p-4">
-          {product.brand && (
-            <p className="text-xs font-medium text-muted-foreground">{product.brand}</p>
-          )}
-          <h3 className="line-clamp-2 font-medium leading-tight">{name}</h3>
-          {(product.tags ?? []).length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {(product.tags ?? []).slice(0, 3).map((tag) => (
-                <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-lg font-bold text-primary">
+
+        {/* Body — grows and holds all text */}
+        <CardContent className="flex flex-1 flex-col p-3 gap-0">
+          {/* Brand — always one-line high, invisible if absent */}
+          <p className="h-4 truncate text-xs font-medium text-muted-foreground">
+            {product.brand ?? ""}
+          </p>
+
+          {/* Title — exactly 2 lines reserved */}
+          <h3 className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug">
+            {name}
+          </h3>
+
+          {/* Tags — single row, overflow hidden so they never push footer */}
+          <div className="mt-1.5 flex h-5 items-center gap-1 overflow-hidden">
+            {(product.tags ?? []).slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Spacer — pushes footer to bottom */}
+          <div className="flex-1" />
+
+          {/* Footer — always pinned at bottom, aligned across all cards */}
+          <div className="mt-2 flex items-center justify-between border-t pt-2">
+            <span className="text-base font-bold text-primary">
               {formatPrice(product.selling_price, product.currency)}
             </span>
             <Badge className="border bg-secondary text-secondary-foreground text-xs">
