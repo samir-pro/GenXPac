@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/user/GenXPac && npm run build 2>&1 | tail -20"
+          }
+        ]
+      }
+    ]
+  }
+}
