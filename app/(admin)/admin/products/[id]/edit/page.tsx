@@ -16,12 +16,19 @@ export default async function EditProductPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: product }, { data: categories }] = await Promise.all([
-    supabase.from("products").select("*").eq("id", id).single(),
-    supabase.from("categories").select("*").order("name_en"),
-  ]);
+  const [{ data: product }, { data: categories }, { data: tagProducts }] =
+    await Promise.all([
+      supabase.from("products").select("*").eq("id", id).single(),
+      supabase.from("categories").select("*").order("name_en"),
+      supabase.from("products").select("tags").not("tags", "is", null).neq("id", id),
+    ]);
 
   if (!product) notFound();
+
+  const tagSet = new Set<string>();
+  for (const tag of (product as Product & { tags?: string[] }).tags ?? []) tagSet.add(tag);
+  for (const p of tagProducts ?? []) for (const tag of (p.tags as string[]) ?? []) tagSet.add(tag);
+  const allTags = Array.from(tagSet).sort();
 
   async function action(formData: FormData) {
     "use server";
@@ -40,6 +47,7 @@ export default async function EditProductPage({
       <ProductForm
         categories={(categories ?? []) as Category[]}
         product={product as Product}
+        allTags={allTags}
         action={action}
       />
     </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Loader2, Languages } from "lucide-react";
+import { UploadCloud, X, Loader2, Languages, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
@@ -21,10 +21,12 @@ type Lang = "fr" | "ar" | "en";
 export function ProductForm({
   categories,
   product,
+  allTags,
   action,
 }: {
   categories: Category[];
   product?: Product;
+  allTags: string[];
   action: (formData: FormData) => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -46,6 +48,22 @@ export function ProductForm({
   const [submitting, setSubmitting] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [sourceLang, setSourceLang] = useState<Lang>("fr");
+
+  // Tag chip state
+  const [tags, setTags] = useState<string[]>((product as (Product & { tags?: string[] }) | undefined)?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
+  const [tagSuggestOpen, setTagSuggestOpen] = useState(false);
+  const tagRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (tagRef.current && !tagRef.current.contains(e.target as Node)) {
+        setTagSuggestOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const setField = (key: keyof typeof fields, value: string) =>
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -120,6 +138,7 @@ export function ProductForm({
         // Inject controlled fields into FormData
         Object.entries(fields).forEach(([k, v]) => fd.set(k, v));
         fd.set("images", images.join("\n"));
+        fd.set("tags", tags.join(","));
         try {
           await action(fd);
         } catch (e) {
@@ -245,13 +264,115 @@ export function ProductForm({
               ))}
             </Select>
           </div>
+
+          {/* Tag chip input with autocomplete */}
           <div className="space-y-2 sm:col-span-2">
-            <Label>{t("tags")} (séparées par des virgules)</Label>
-            <Input
-              name="tags"
-              defaultValue={product?.tags?.join(", ") ?? ""}
-              placeholder="électronique, gadget, usb"
-            />
+            <Label>{t("tags")}</Label>
+            {/* Selected tag chips */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded-full border bg-secondary px-2.5 py-1 text-xs font-medium"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}
+                      className="ml-0.5 rounded-full hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Tag autocomplete input */}
+            <div className="relative" ref={tagRef}>
+              <Input
+                value={tagInput}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  setTagSuggestOpen(true);
+                }}
+                onFocus={() => setTagSuggestOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    const val = tagInput.trim().replace(/,$/, "").toLowerCase();
+                    if (val && !tags.includes(val)) setTags((prev) => [...prev, val]);
+                    setTagInput("");
+                    setTagSuggestOpen(false);
+                  } else if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+                    setTags((prev) => prev.slice(0, -1));
+                  }
+                }}
+                placeholder={tags.length === 0 ? "Tapez un tag et appuyez sur Entrée…" : "Ajouter un tag…"}
+              />
+              {tagSuggestOpen && tagInput.trim() && (
+                <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md">
+                  <div className="max-h-48 overflow-y-auto p-1">
+                    {/* Matching existing tags */}
+                    {allTags
+                      .filter(
+                        (t) =>
+                          t.toLowerCase().includes(tagInput.toLowerCase()) &&
+                          !tags.includes(t)
+                      )
+                      .slice(0, 8)
+                      .map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => {
+                            setTags((prev) => [...prev, suggestion]);
+                            setTagInput("");
+                            setTagSuggestOpen(false);
+                          }}
+                          className="flex w-full items-center rounded px-3 py-1.5 text-sm hover:bg-accent"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    {/* Option to add new tag not in list */}
+                    {tagInput.trim() &&
+                      !allTags.some(
+                        (t) => t.toLowerCase() === tagInput.trim().toLowerCase()
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = tagInput.trim().toLowerCase();
+                            if (!tags.includes(val)) setTags((prev) => [...prev, val]);
+                            setTagInput("");
+                            setTagSuggestOpen(false);
+                          }}
+                          className="flex w-full items-center gap-1.5 rounded px-3 py-1.5 text-sm hover:bg-accent text-muted-foreground"
+                        >
+                          <Plus className="h-3 w-3" /> Créer « {tagInput.trim()} »
+                        </button>
+                      )}
+                    {allTags.filter(
+                      (t) =>
+                        t.toLowerCase().includes(tagInput.toLowerCase()) &&
+                        !tags.includes(t)
+                    ).length === 0 &&
+                      (allTags.some(
+                        (t) => t.toLowerCase() === tagInput.trim().toLowerCase()
+                      ) ||
+                        !tagInput.trim()) && (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">
+                          Aucune suggestion
+                        </p>
+                      )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Appuyez sur Entrée ou virgule pour ajouter. Cliquez sur un tag existant pour sélectionner.
+            </p>
           </div>
         </CardContent>
       </Card>
