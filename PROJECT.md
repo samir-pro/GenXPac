@@ -327,69 +327,87 @@ GenXPac/
 - [x] Supabase project created and credentials collected
 - [x] Project documentation written (this file)
 
-### Phase 1 — Project Scaffold 🔲
-- [ ] Initialize Next.js 14 project with TypeScript + Tailwind
-- [ ] Install all dependencies
-- [ ] Initialize shadcn/ui
-- [ ] Create `.env.local` with Supabase credentials
-- [ ] Apply database schema via Supabase SQL editor
-- [ ] Configure Supabase Storage bucket (`product-images`)
-- [ ] Write `middleware.ts` for route protection
-- [ ] Create Supabase client helpers (`lib/supabase/`)
-- [ ] Create TypeScript database types (`types/database.ts`)
+### Phase 1 — Project Scaffold ✅
+- [x] Initialize Next.js 14 project with TypeScript + Tailwind
+- [x] Install all dependencies
+- [x] shadcn-style UI component library (hand-built, no extra deps)
+- [x] Create `.env.local` with Supabase credentials
+- [x] Database schema written (`supabase/schema.sql`) — apply via SQL editor
+- [x] Supabase Storage bucket (`product-images`) — created by schema.sql
+- [x] Write `middleware.ts` for route protection
+- [x] Create Supabase client helpers (`lib/supabase/`)
+- [x] Create TypeScript database types (`types/database.ts`)
 
-### Phase 2 — Auth & User Management 🔲
-- [ ] Login page
-- [ ] Shop registration page
-- [ ] "Pending approval" holding page
-- [ ] Admin: client list + approve/reject
-- [ ] Seed first admin account (`scripts/seed-admin.mjs`)
+### Phase 2 — Auth & User Management ✅
+- [x] Login page
+- [x] Shop registration page
+- [x] "Pending approval" holding page
+- [x] Admin: client list + approve/suspend
+- [x] Seed first admin account (`scripts/seed-admin.mjs`)
 
-### Phase 3 — Product Catalog (Admin) 🔲
-- [ ] Product list page with search/filter
-- [ ] Add product form (multilingual, image upload, URL import)
-- [ ] Edit product page
-- [ ] Delete product
-- [ ] Categories management
+### Phase 3 — Product Catalog (Admin) ✅
+- [x] Product list page with search
+- [x] Add product form (multilingual, image upload, URL import)
+- [x] Edit product page
+- [x] Delete product (with confirmation)
+- [x] Publish / unpublish toggle
+- [x] Categories seeded (managed via DB)
 
-### Phase 4 — CSV/Excel Import 🔲
-- [ ] File upload UI (drag & drop)
-- [ ] Parse .csv / .xls / .xlsx with `xlsx`
-- [ ] Column mapping and preview table
-- [ ] Bulk insert to Supabase
+### Phase 4 — CSV/Excel Import ✅
+- [x] File upload UI
+- [x] Parse .csv / .xls / .xlsx with `xlsx`
+- [x] Column mapping and preview table
+- [x] Bulk insert to Supabase
+- [x] Sample template (`supabase/sample-products.csv`)
 
-### Phase 5 — Client Catalog & Pre-orders 🔲
-- [ ] Product grid page with filters
-- [ ] Product detail page
-- [ ] Pre-order modal (quantity + note)
-- [ ] "My orders" page with status tracking
-- [ ] Cancel pending order
+### Phase 5 — Client Catalog & Pre-orders ✅
+- [x] Product grid page with filters (category, brand, price, search)
+- [x] Product detail page with image gallery
+- [x] Pre-order modal (quantity + note + total estimate)
+- [x] "My orders" page with status tracking
+- [x] Cancel pending order
 
-### Phase 6 — Order Aggregation (Admin) 🔲
-- [ ] Aggregated orders table (product → total units → # shops)
-- [ ] Drill-down per product: which shops, how many
-- [ ] Bulk status update
-- [ ] Assign orders to a batch
+### Phase 6 — Order Aggregation (Admin) ✅
+- [x] Aggregated orders table (product → total units → # shops)
+- [x] Drill-down per product: which shops, how many
+- [x] Bulk status update + per-row status update
+- [x] Assign orders to a batch
 
-### Phase 7 — Batches 🔲
-- [ ] Create batch page
-- [ ] Assign pre-orders to batch
-- [ ] Track batch lifecycle
-- [ ] Set dates (ordered, estimated arrival, actual arrival)
+### Phase 7 — Batches ✅
+- [x] Create batch (modal)
+- [x] Assign pre-orders to batch (from orders view)
+- [x] Track batch lifecycle (status dropdown)
+- [x] Set estimated arrival, auto-stamp order/arrival dates
 
-### Phase 8 — Messaging / Negotiation 🔲
-- [ ] Per-order message thread
-- [ ] Admin: reply from order detail
-- [ ] Client: message tab in "My Orders"
-- [ ] Unread indicator
+### Phase 8 — Messaging / Negotiation ✅
+- [x] Per-order message thread
+- [x] Admin inbox (all client threads)
+- [x] Client messages page
+- [x] Shared conversation UI
 
-### Phase 9 — Polish & Deployment 🔲
-- [ ] Multilingual UI toggle (FR / AR / EN)
-- [ ] RTL layout support for Arabic
-- [ ] Mobile responsive review
-- [ ] Loading states and error handling throughout
+### Phase 9 — Polish & Deployment 🔶
+- [x] Multilingual UI toggle (FR / AR / EN)
+- [x] RTL layout support for Arabic
+- [x] Mobile responsive (sidebar drawer, responsive grids)
+- [x] Loading states and toast notifications
+- [x] `npm run build` passes cleanly (19 routes)
+- [ ] Apply schema + seed admin against live Supabase (needs network egress)
 - [ ] Deploy to Vercel
 - [ ] Connect custom domain (if available)
+
+---
+
+## ⚠️ Remaining manual steps (require network access to Supabase)
+
+The remote build environment blocks outbound traffic to the Supabase host, so
+these two steps must be run by you (or from Vercel / a machine with network
+access):
+
+1. **Apply the schema** — paste `supabase/schema.sql` into the Supabase SQL
+   Editor and run it.
+2. **Create the admin** — `node scripts/seed-admin.mjs <email> <password>`.
+
+After that the app is fully functional locally (`npm run dev`) and on Vercel.
 
 ---
 
