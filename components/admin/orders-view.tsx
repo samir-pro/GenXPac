@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Image from "next/image";
 import { ChevronDown, ChevronRight, Search, X, ImageOff, Image as ImageIcon } from "lucide-react";
 import { useI18n, localized } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
@@ -116,10 +115,10 @@ export function OrdersView({
 
   return (
     <div className="space-y-0">
-      {/* ── Filter bar ── */}
-      <div className="mb-4 flex flex-wrap gap-3">
-        {/* Search */}
-        <div className="relative min-w-[180px] flex-1">
+      {/* ── Filter bar: horizontal on desktop, stacked on mobile ── */}
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap sm:gap-3">
+        {/* Search — grows to fill available space */}
+        <div className="relative flex-1 sm:min-w-[180px]">
           <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={orderSearch}
@@ -128,58 +127,65 @@ export function OrdersView({
             className="ps-9 h-9"
           />
         </div>
-        {/* Status filter */}
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as PreorderStatus | "")}
-          className="h-9 min-w-[11rem]"
-        >
-          <option value="">{t("status")} — {t("all")}</option>
-          {PREORDER_STATUS_FLOW.map((s) => (
-            <option key={s} value={s}>
-              {PREORDER_STATUS[s][lang]}
-            </option>
-          ))}
-        </Select>
-        {/* Batch filter */}
-        {batches.length > 0 && (
+
+        {/* Right-side controls: inline on desktop, stacked on mobile */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          {/* Status filter */}
           <Select
-            value={batchFilter}
-            onChange={(e) => setBatchFilter(e.target.value)}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as PreorderStatus | "")}
             className="h-9 min-w-[11rem]"
           >
-            <option value="">{t("batchChina")} — {t("all")}</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
+            <option value="">{t("status")} — {t("all")}</option>
+            {PREORDER_STATUS_FLOW.map((s) => (
+              <option key={s} value={s}>
+                {PREORDER_STATUS[s][lang]}
               </option>
             ))}
           </Select>
-        )}
-        {/* Image toggle */}
-        <button
-          type="button"
-          onClick={() => setShowImages((v) => !v)}
-          title={showImages ? "Masquer les images" : "Afficher les images"}
-          className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-            showImages
-              ? "border-primary bg-primary/10 text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {showImages ? <ImageOff className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-          {showImages ? "Masquer images" : "Afficher images"}
-        </button>
-        {/* Active filter chips + reset */}
-        {(orderSearch || statusFilter || batchFilter) && (
+
+          {/* Batch filter */}
+          {batches.length > 0 && (
+            <Select
+              value={batchFilter}
+              onChange={(e) => setBatchFilter(e.target.value)}
+              className="h-9 min-w-[11rem]"
+            >
+              <option value="">{t("batchChina")} — {t("all")}</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </Select>
+          )}
+
+          {/* Image toggle */}
           <button
             type="button"
-            onClick={() => { setOrderSearch(""); setStatusFilter(""); setBatchFilter(""); }}
-            className="flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => setShowImages((v) => !v)}
+            title={showImages ? "Masquer les images" : "Afficher les images"}
+            className={`flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm transition-colors whitespace-nowrap ${
+              showImages
+                ? "border-primary bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
-            <X className="h-3.5 w-3.5" /> {t("cancel")}
+            {showImages ? <ImageOff className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+            {showImages ? "Masquer images" : "Afficher images"}
           </button>
-        )}
+
+          {/* Clear filters */}
+          {(orderSearch || statusFilter || batchFilter) && (
+            <button
+              type="button"
+              onClick={() => { setOrderSearch(""); setStatusFilter(""); setBatchFilter(""); }}
+              className="flex h-9 items-center gap-1 rounded-md border px-3 text-sm text-muted-foreground hover:text-foreground whitespace-nowrap"
+            >
+              <X className="h-3.5 w-3.5" /> {t("cancel")}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Empty filtered state */}
@@ -225,11 +231,10 @@ export function OrdersView({
                         <div className="flex items-center gap-2">
                           {showImages && (
                             g.product.images?.[0] ? (
-                              <Image
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
                                 src={g.product.images[0]}
                                 alt={localized(g.product, "name", lang)}
-                                width={40}
-                                height={40}
                                 className="h-10 w-10 rounded object-cover border shrink-0"
                               />
                             ) : (
