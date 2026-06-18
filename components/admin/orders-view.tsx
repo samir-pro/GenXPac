@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import Image from "next/image";
+import { ChevronDown, ChevronRight, Search, X, ImageOff, Image as ImageIcon } from "lucide-react";
 import { useI18n, localized } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
 import { formatPrice } from "@/lib/utils";
@@ -56,6 +57,7 @@ export function OrdersView({
   const [orderSearch, setOrderSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PreorderStatus | "">("");
   const [batchFilter, setBatchFilter] = useState<string>("");
+  const [showImages, setShowImages] = useState(false);
 
   const filteredGroups = useMemo(() => {
     return groups.filter((g) => {
@@ -130,7 +132,7 @@ export function OrdersView({
         <Select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as PreorderStatus | "")}
-          className="h-9 w-48"
+          className="h-9 min-w-[11rem]"
         >
           <option value="">{t("status")} — {t("all")}</option>
           {PREORDER_STATUS_FLOW.map((s) => (
@@ -144,7 +146,7 @@ export function OrdersView({
           <Select
             value={batchFilter}
             onChange={(e) => setBatchFilter(e.target.value)}
-            className="h-9 w-48"
+            className="h-9 min-w-[11rem]"
           >
             <option value="">{t("batchChina")} — {t("all")}</option>
             {batches.map((b) => (
@@ -154,6 +156,20 @@ export function OrdersView({
             ))}
           </Select>
         )}
+        {/* Image toggle */}
+        <button
+          type="button"
+          onClick={() => setShowImages((v) => !v)}
+          title={showImages ? "Masquer les images" : "Afficher les images"}
+          className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+            showImages
+              ? "border-primary bg-primary/10 text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {showImages ? <ImageOff className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+          {showImages ? "Masquer images" : "Afficher images"}
+        </button>
         {/* Active filter chips + reset */}
         {(orderSearch || statusFilter || batchFilter) && (
           <button
@@ -175,7 +191,7 @@ export function OrdersView({
 
       {filteredGroups.length > 0 && (
         <div className="overflow-x-auto rounded-md border bg-background">
-          <Table className="min-w-[600px]">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
                 <TableHead></TableHead>
@@ -206,7 +222,24 @@ export function OrdersView({
                         )}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {localized(g.product, "name", lang)}
+                        <div className="flex items-center gap-2">
+                          {showImages && (
+                            g.product.images?.[0] ? (
+                              <Image
+                                src={g.product.images[0]}
+                                alt={localized(g.product, "name", lang)}
+                                width={40}
+                                height={40}
+                                className="h-10 w-10 rounded object-cover border shrink-0"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded border bg-muted flex items-center justify-center shrink-0">
+                                <ImageOff className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )
+                          )}
+                          <span>{localized(g.product, "name", lang)}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <span className="font-semibold">{g.totalUnits}</span>{" "}
@@ -217,7 +250,7 @@ export function OrdersView({
                       <TableCell>{g.shops}</TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Select
-                          className="h-8 w-40"
+                          className="h-8 min-w-[9rem] w-full"
                           defaultValue={g.rows[0]?.batch_id ?? ""}
                           onChange={(e) =>
                             onAssignBatch(g.product.id, e.target.value)
@@ -233,7 +266,7 @@ export function OrdersView({
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <Select
-                          className="h-8 w-44"
+                          className="h-8 min-w-[11rem] w-full"
                           defaultValue=""
                           onChange={(e) => {
                             if (e.target.value)
@@ -292,7 +325,7 @@ export function OrdersView({
                                     </TableCell>
                                     <TableCell>
                                       <Select
-                                        className="h-8 w-40"
+                                        className="h-8 min-w-[10rem] w-full"
                                         defaultValue={r.status}
                                         onChange={(e) =>
                                           rowStatus(
