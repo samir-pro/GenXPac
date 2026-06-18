@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { bulkImportProducts } from "@/app/(admin)/admin/products/actions";
+import { bulkImport as bulkImportProducts } from "@/app/(admin)/admin/products/actions";
 import type { Product } from "@/types/database";
 
 type ParsedRow = Partial<Product>;
