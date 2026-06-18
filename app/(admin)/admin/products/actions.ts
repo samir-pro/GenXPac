@@ -100,7 +100,24 @@ export async function togglePublish(id: string, next: boolean) {
   revalidatePath("/admin/products");
 }
 
-export async function bulkImportProducts(
+export async function bulkPublish(ids: string[], publish: boolean) {
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase
+    .from("products")
+    .update({ is_published: publish })
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/products");
+}
+
+export async function bulkDelete(ids: string[]) {
+  const { supabase } = await assertAdmin();
+  const { error } = await supabase.from("products").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/products");
+}
+
+export async function bulkImport(
   products: Array<Partial<Product>>
 ): Promise<{ inserted: number; error?: string }> {
   const { supabase, userId } = await assertAdmin();
