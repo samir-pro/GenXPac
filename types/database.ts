@@ -48,6 +48,7 @@ export interface Product {
   description_ar: string | null;
   category_id: string | null;
   brand: string | null;
+  sku: string | null;
   tags: string[] | null;
   images: string[] | null;
   cost_price: number | null;
@@ -55,8 +56,14 @@ export interface Product {
   currency: string;
   unit: string;
   min_order_qty: number;
+  weight_kg: number | null;
+  lead_time_days: number | null;
+  supplier_name: string | null;
+  supplier_url: string | null;
   stock_status: StockStatus;
   is_published: boolean;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +108,12 @@ export interface PreorderWithRelations extends Preorder {
 
 export interface ProductWithCategory extends Product {
   category: Category | null;
+}
+
+export interface ProductWithMeta extends Product {
+  category: Category | null;
+  creator: Pick<Profile, "full_name" | "email"> | null;
+  updater: Pick<Profile, "full_name" | "email"> | null;
 }
 
 // Minimal Supabase Database typing for the SSR clients.

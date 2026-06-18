@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { useI18n, localized } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,24 +19,25 @@ import {
 import { StockStatusBadge } from "@/components/status-badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteProduct, togglePublish } from "@/app/(admin)/admin/products/actions";
-import type { Product } from "@/types/database";
+import type { ProductWithMeta } from "@/types/database";
 
-export function ProductsTable({ products }: { products: Product[] }) {
+export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
   const { t, lang } = useI18n();
   const { toast } = useToast();
   const [query, setQuery] = useState("");
-  const [toDelete, setToDelete] = useState<Product | null>(null);
+  const [toDelete, setToDelete] = useState<ProductWithMeta | null>(null);
   const [busy, setBusy] = useState(false);
 
   const filtered = products.filter((p) => {
     const name = localized(p, "name", lang).toLowerCase();
     return (
       name.includes(query.toLowerCase()) ||
-      (p.brand ?? "").toLowerCase().includes(query.toLowerCase())
+      (p.brand ?? "").toLowerCase().includes(query.toLowerCase()) ||
+      (p.sku ?? "").toLowerCase().includes(query.toLowerCase())
     );
   });
 
-  async function onTogglePublish(p: Product) {
+  async function onTogglePublish(p: ProductWithMeta) {
     try {
       await togglePublish(p.id, !p.is_published);
       toast(p.is_published ? "Produit dépublié" : "Produit publié", "success");
@@ -68,15 +69,19 @@ export function ProductsTable({ products }: { products: Product[] }) {
         className="max-w-sm"
       />
 
-      <div className="rounded-md border bg-background">
+      <div className="rounded-md border bg-background overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead></TableHead>
               <TableHead>Nom</TableHead>
+              <TableHead>SKU</TableHead>
               <TableHead>{t("brand")}</TableHead>
               <TableHead>{t("sellingPrice")}</TableHead>
               <TableHead>{t("stockStatus")}</TableHead>
+              <TableHead>Ajouté par</TableHead>
+              <TableHead>Date d&apos;ajout</TableHead>
+              <TableHead>Modifié par</TableHead>
               <TableHead>{t("published")}</TableHead>
               <TableHead className="text-end">{t("actions")}</TableHead>
             </TableRow>
@@ -84,7 +89,7 @@ export function ProductsTable({ products }: { products: Product[] }) {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground">
                   Aucun produit.
                 </TableCell>
               </TableRow>
@@ -106,12 +111,28 @@ export function ProductsTable({ products }: { products: Product[] }) {
                   <TableCell className="font-medium">
                     {localized(p, "name", lang)}
                   </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {p.sku ?? "—"}
+                  </TableCell>
                   <TableCell>{p.brand ?? "—"}</TableCell>
                   <TableCell>
                     {formatPrice(p.selling_price, p.currency)}
                   </TableCell>
                   <TableCell>
                     <StockStatusBadge status={p.stock_status} />
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {p.creator
+                      ? (p.creator.full_name || p.creator.email)
+                      : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {formatDate(p.created_at)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {p.updater && p.updater !== p.creator
+                      ? (p.updater.full_name || p.updater.email)
+                      : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell>
                     <Button
