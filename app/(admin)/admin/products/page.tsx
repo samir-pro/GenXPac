@@ -3,16 +3,28 @@ import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ProductsTable } from "@/components/admin/products-table";
-import type { ProductWithMeta } from "@/types/database";
+import type { Category, ProductWithMeta } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
   const supabase = await createClient();
-  const { data: products } = await supabase
-    .from("products")
-    .select("*, creator:profiles!created_by(full_name,email), updater:profiles!updated_by(full_name,email)")
-    .order("created_at", { ascending: false });
+
+  const [{ data: products }, { data: categories }] = await Promise.all([
+    supabase
+      .from("products")
+      .select("*, category:categories(*), creator:profiles!created_by(full_name,email), updater:profiles!updated_by(full_name,email)")
+      .order("created_at", { ascending: false }),
+    supabase.from("categories").select("*").order("name_en"),
+  ]);
+
+  const tagSet = new Set<string>();
+  for (const p of products ?? []) {
+    for (const tag of ((p as unknown as { tags?: string[] }).tags ?? [])) {
+      tagSet.add(tag);
+    }
+  }
+  const allTags = Array.from(tagSet).sort();
 
   return (
     <div className="space-y-6">
@@ -24,7 +36,11 @@ export default async function ProductsPage() {
           </Button>
         </Link>
       </div>
-      <ProductsTable products={(products ?? []) as unknown as ProductWithMeta[]} />
+      <ProductsTable
+        products={(products ?? []) as unknown as ProductWithMeta[]}
+        categories={(categories ?? []) as Category[]}
+        allTags={allTags}
+      />
     </div>
   );
 }

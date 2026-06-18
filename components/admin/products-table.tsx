@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Pencil, Trash2, Eye, EyeOff, Search, LayoutGrid, List,
-  ChevronUp, ChevronDown, ChevronsUpDown, ImageIcon, CheckSquare, Square,
+  ChevronUp, ChevronDown, ChevronsUpDown, ImageIcon, CheckSquare, Square, Hash,
 } from "lucide-react";
 import { useI18n, localized } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StockStatusBadge } from "@/components/status-badge";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteProduct, togglePublish, bulkPublish, bulkDelete } from "@/app/(admin)/admin/products/actions";
-import type { ProductWithMeta } from "@/types/database";
+import type { Category, ProductWithMeta } from "@/types/database";
 
 type Tab = "all" | "published" | "draft" | "limited";
 type SortCol = "name" | "price" | "date" | "stock";
@@ -29,7 +29,24 @@ function SortIcon({ col, active, dir }: { col: SortCol; active: SortCol; dir: So
     : <ChevronDown className="ms-1 inline h-3 w-3" />;
 }
 
-export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
+function getDescendantIds(catId: string, cats: Category[]): Set<string> {
+  const result = new Set([catId]);
+  const children = cats.filter((c) => c.parent_id === catId);
+  for (const child of children) {
+    Array.from(getDescendantIds(child.id, cats)).forEach((id) => result.add(id));
+  }
+  return result;
+}
+
+export function ProductsTable({
+  products,
+  categories,
+  allTags,
+}: {
+  products: ProductWithMeta[];
+  categories: Category[];
+  allTags: string[];
+}) {
   const { t, lang } = useI18n();
   const { toast } = useToast();
 
@@ -43,6 +60,23 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // ── Category + tag filter state ────────────────────────────
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [tagSearch, setTagSearch] = useState("");
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(e.target as Node)) {
+        setTagDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   // ── Stats ──────────────────────────────────────────────────
   const stats = useMemo(() => ({
     total:     products.length,
@@ -53,6 +87,9 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
 
   // ── Filter + sort ──────────────────────────────────────────
   const filtered = useMemo(() => {
+    // Build descendant set for category filter
+    const descendantIds = categoryId ? getDescendantIds(categoryId, categories) : null;
+
     let list = products.filter((p) => {
       const name = localized(p, "name", lang).toLowerCase();
       const q = query.toLowerCase();
@@ -60,6 +97,11 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
       if (tab === "published" && !p.is_published) return false;
       if (tab === "draft"     &&  p.is_published) return false;
       if (tab === "limited"   && p.stock_status === "available") return false;
+      // Category filter
+      if (descendantIds && !descendantIds.has(p.category_id ?? "")) return false;
+      // Tag filter
+      const pTags = (p as unknown as { tags?: string[] }).tags;
+      if (selectedTags.size > 0 && !pTags?.some((tag) => selectedTags.has(tag))) return false;
       return true;
     });
 
@@ -73,7 +115,7 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
     });
 
     return list;
-  }, [products, query, tab, sortCol, sortDir, lang]);
+  }, [products, query, tab, sortCol, sortDir, lang, categoryId, selectedTags, categories]);
 
   // ── Sort toggle ────────────────────────────────────────────
   function toggleSort(col: SortCol) {
@@ -151,6 +193,24 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
     { key: "limited",   label: t("limitedTab"),    count: stats.limited,   color: "text-amber-600" },
   ];
 
+  // ── Category tree helpers ──────────────────────────────────
+  const parentCategories = categories.filter((c) => !c.parent_id);
+  const childCategories = categories.filter((c) => !!c.parent_id);
+
+  // ── Tag filter helpers ─────────────────────────────────────
+  const filteredTagOptions = allTags.filter((tag) =>
+    tag.toLowerCase().includes(tagSearch.toLowerCase())
+  );
+
+  function toggleTagSelection(tag: string) {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-4">
       {/* ── Stat cards ── */}
@@ -170,10 +230,87 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
 
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* Search */}
         <div className="relative flex-1 min-w-[180px] max-w-sm">
           <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search")} className="ps-9" />
         </div>
+
+        {/* Category filter */}
+        <select
+          value={categoryId ?? ""}
+          onChange={(e) => setCategoryId(e.target.value || null)}
+          className="rounded-md border px-3 py-2 text-sm bg-background h-10"
+        >
+          <option value="">Toutes catégories</option>
+          {parentCategories.map((parent) => (
+            <>
+              <option key={parent.id} value={parent.id}>
+                {parent.name_fr || parent.name_en}
+              </option>
+              {childCategories
+                .filter((c) => c.parent_id === parent.id)
+                .map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {"  — "}{child.name_fr || child.name_en}
+                  </option>
+                ))}
+            </>
+          ))}
+        </select>
+
+        {/* Tag filter dropdown */}
+        <div className="relative" ref={tagDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setTagDropdownOpen((o) => !o)}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm bg-background h-10 hover:bg-muted/50 transition-colors"
+          >
+            <Hash className="h-4 w-4 text-muted-foreground" />
+            Tags
+            {selectedTags.size > 0 && (
+              <span className="inline-flex items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground min-w-[18px]">
+                {selectedTags.size}
+              </span>
+            )}
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          {tagDropdownOpen && (
+            <div className="absolute z-20 mt-1 w-56 rounded-md border bg-popover shadow-md">
+              <div className="p-2">
+                <Input
+                  value={tagSearch}
+                  onChange={(e) => setTagSearch(e.target.value)}
+                  placeholder="Rechercher un tag…"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="max-h-52 overflow-y-auto px-1 pb-1">
+                {filteredTagOptions.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">Aucun tag</p>
+                ) : (
+                  filteredTagOptions.map((tag) => (
+                    <label
+                      key={tag}
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTags.has(tag)}
+                        onChange={() => toggleTagSelection(tag)}
+                        className="h-3.5 w-3.5"
+                      />
+                      {tag}
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* View toggle */}
         <div className="ms-auto flex rounded-md border">
           <button type="button" onClick={() => setViewMode("table")} className={`p-2 transition-colors ${viewMode === "table" ? "bg-muted" : "hover:bg-muted/50"}`} title={t("stock")}>
             <List className="h-4 w-4" />
@@ -183,6 +320,34 @@ export function ProductsTable({ products }: { products: ProductWithMeta[] }) {
           </button>
         </div>
       </div>
+
+      {/* ── Selected tag chips ── */}
+      {selectedTags.size > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from(selectedTags).map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full border bg-secondary px-2.5 py-1 text-xs font-medium"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => toggleTagSelection(tag)}
+                className="ml-0.5 rounded-full hover:text-destructive"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => setSelectedTags(new Set())}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Tout effacer
+          </button>
+        </div>
+      )}
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 border-b">
